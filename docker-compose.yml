@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend
+    command: gunicorn devops_monitor.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DEBUG=1
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/devops_monitor
+      - REDIS_URL=redis://redis:6379/0
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "3000:3000"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+
+  db:
+    image: postgres:13
+    container_name: db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+    environment:
+      POSTGRES_DB: devops_monitor
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data: 

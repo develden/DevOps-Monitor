@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: devops-monitor-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: devops-monitor.example.com
+    http:
+      paths:
+      - path: /backend
+        pathType: Prefix
+        backend:
+          service:
+            name: devops-monitor-backend
+            port:
+              number: 8000
+      - path: /frontend
+        pathType: Prefix
+        backend:
+          service:
+            name: devops-monitor-frontend
+            port:
+              number: 3000 

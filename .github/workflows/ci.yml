@@ -1,0 +1,74 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_DB: devops_monitor
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Install Backend dependencies
+        working-directory: backend
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Backend tests
+        working-directory: backend
+        run: |
+          python manage.py test
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - name: Install Frontend dependencies and run tests
+        working-directory: frontend
+        run: |
+          npm install
+          npm test
+
+      - name: Build Docker image for Backend
+        uses: docker/build-push-action@v2
+        with:
+          context: ./backend
+          file: Dockerfile
+          push: false
+          tags: user/devops_monitor_backend:latest
+
+      - name: Build Docker image for Frontend
+        uses: docker/build-push-action@v2
+        with:
+          context: ./frontend
+          file: Dockerfile
+          push: false
+          tags: user/devops_monitor_frontend:latest 
